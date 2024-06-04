@@ -35,7 +35,7 @@ def handle_client(client_socket, collection):
             document = convert_objectid_to_str(document)
             print(f"Sending document: {json.dumps(document)}")
             client_socket.send((json.dumps(document) + '\n').encode('utf-8'))  # Send the document as a data stream
-            time.sleep(10)
+            time.sleep(3)
     except Exception as e:
         print(f"Error: {e}")
     finally:

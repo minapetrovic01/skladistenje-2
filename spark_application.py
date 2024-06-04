@@ -36,9 +36,7 @@ socketDF = spark.readStream.format("socket").option("host", "localhost").option(
 
 parsedDF = socketDF.select(from_json(col("value"), schema).alias("data")).select("data.*")
 
-filteredParsedDF = parsedDF.filter(col("_id").isNotNull())
-
-castedDF = filteredParsedDF.select(
+castedDF = parsedDF.select(
     col("_id"),
     col("snoringRange").cast(DoubleType()).alias("snoringRange"),
     col("respirationRate").cast(DoubleType()).alias("respirationRate"),
@@ -51,10 +49,19 @@ castedDF = filteredParsedDF.select(
     col("stresState").cast(DoubleType()).alias("stresState")
 )
 
-#debug_query = castedDF.writeStream.outputMode("append").format("console").option("truncate", False).start()
+# debug_query = parsedDF.writeStream.outputMode("append").format("console").option("truncate", False).start()
 
 filteredDF = castedDF.where("heartRate < 75 and respirationRate > 20")
 
-query = filteredDF.writeStream.outputMode("append").format("console").option("truncate", False).start()
-query.awaitTermination()
+# filteredParsedDF = filteredDF.filter(col("_id").isNotNull())
+filteredDF = filteredDF.coalesce(1)
+
+
+csv_query = filteredDF.writeStream.outputMode("append").format("csv").option("path", "pillowOutput").option("checkpointLocation", "checkpoint").option("header", True).start()
+
+
+console_query = filteredDF.writeStream.outputMode("append").format("console").option("truncate", False).start()
+
+csv_query.awaitTermination()
+console_query.awaitTermination()
 # debug_query.awaitTermination()
